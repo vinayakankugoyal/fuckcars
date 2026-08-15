@@ -1,13 +1,5 @@
-header {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-}
-main {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 60%;
+* {
+  box-sizing: border-box;
 }
 
 body {
@@ -15,7 +7,7 @@ body {
   color: #fff;
   font-family: monospace;
   margin: 0;
-  padding: 0;
+  padding: 2rem 1rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -23,43 +15,200 @@ body {
   min-height: 100vh;
 }
 
+header {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+}
+
+main {
+  width: 100%;
+  max-width: 46rem;
+}
+
 .logo {
   padding: 10px;
 }
 
-.logo-text {
-    text-align: center;
+.logo pre {
+  margin: 0;
+}
+
+.logo-text h2 {
+  text-align: center;
+  margin: 0.3em 0;
 }
 
 .container {
-  width: 70%;
+  width: 100%;
   text-align: center;
 }
 
-.data-bar {
-  background-color: #ccc;
-  /* Light gray for bars */
-  height: 20px;
-  margin-bottom: 5px;
+.headline {
+  font-size: 1.3em;
+  line-height: 1.5;
+  margin: 1.5em 0;
 }
 
-.car-bar {
-  width: calc(100% * (42514 / (42514 + 1230)));
-  /* Percentage based on car deaths */
-  height: inherit;
-  background-color: #900;
-  /* Dark red for car deaths */
-}
+/* Chart ------------------------------------------------------------------ */
 
-.bicycle-bar {
-  width: calc(100% * (1230 / (42514 + 1230)));
-  /* Percentage based on bicycle deaths */
-  height: inherit;
-  background-color: #00f;
-  /*Blue for bicycle deaths*/
-}
-
-.data-label {
-  font-size: 1.2em;
+.chart {
+  width: 100%;
+  border-collapse: collapse;
   text-align: left;
+  table-layout: fixed;
+}
+
+.chart caption {
+  caption-side: top;
+  text-align: left;
+  padding-bottom: 0.75em;
+  color: #aaa;
+}
+
+.chart th,
+.chart td {
+  padding: 0.4em 0.6em 0.4em 0;
+  font-weight: normal;
+  vertical-align: middle;
+}
+
+.chart th[scope="row"] {
+  width: 11rem;
+}
+
+.chart .note {
+  display: block;
+  font-size: 0.75em;
+  color: #888;
+}
+
+.chart .count,
+.chart .pct {
+  text-align: right;
+  white-space: nowrap;
+  width: 4.5rem;
+}
+
+.chart .bar-cell {
+  width: auto;
+}
+
+.data-bar {
+  background-color: #222;
+  height: 20px;
+}
+
+/* Each bar's width comes from the --pct set alongside its number in the
+   markup, so the label and the bar can't drift apart. */
+.bar {
+  width: var(--pct);
+  height: 100%;
+}
+
+.occupant {
+  background-color: #900;
+}
+
+.motorcyclist {
+  background-color: #c60;
+}
+
+/* People killed outside a vehicle - the point of the chart. */
+.pedestrian,
+.cyclist {
+  background-color: #4af;
+}
+
+.chart .outside th {
+  color: #4af;
+}
+
+.context {
+  line-height: 1.6;
+  margin-top: 2em;
+  text-align: left;
+}
+
+.sources {
+  font-size: 0.8em;
+  color: #888;
+  line-height: 1.6;
+  text-align: left;
+}
+
+.sources a {
+  color: #888;
+}
+
+@media (max-width: 40rem) {
+  .logo-text h2 {
+    font-size: 1.1em;
+  }
+
+  .headline {
+    font-size: 1.1em;
+  }
+
+  .chart {
+    table-layout: auto;
+  }
+
+  .chart th[scope="row"] {
+    width: auto;
+  }
+
+  .chart .note {
+    display: none;
+  }
+
+  /* Stack each row so narrow screens get a full-width bar under the label.
+     The cells are reordered so the two numbers read together, above the bar. */
+  .chart tbody,
+  .chart td,
+  .chart th {
+    display: block;
+    width: auto;
+  }
+
+  .chart tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    margin-bottom: 1em;
+  }
+
+  .chart th[scope="row"] {
+    order: 1;
+    flex: 0 0 100%;
+    padding-bottom: 0.1em;
+  }
+
+  .chart .count {
+    order: 2;
+  }
+
+  .chart .pct {
+    order: 3;
+  }
+
+  .chart .count,
+  .chart .pct {
+    text-align: left;
+    width: auto;
+    padding: 0 0 0.3em 0;
+    color: #aaa;
+  }
+
+  .chart .count::after {
+    content: "\00A0\00B7\00A0";
+  }
+
+  .chart .bar-cell {
+    order: 4;
+    flex: 0 0 100%;
+  }
 }

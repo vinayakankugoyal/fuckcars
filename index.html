@@ -6,43 +6,94 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FCRB</title>
   <link rel="stylesheet" href="style.css">
-  </style>
 </head>
 
 <body>
   <header>
-    <div class="logo">
+    <div class="logo" aria-hidden="true">
       <pre>
    __o
  _ \<_
 (_)/(_)
-      </pre>      
+      </pre>
     </div>
     <div class="logo-text">
       <h2>
       fuck cars ride bikes
       </h2>
     </div>
-    <div class="logo">
+    <div class="logo" aria-hidden="true">
     <pre>
  o__
  _>/ _
 (_)\(_)
-    </pre> 
+    </pre>
   </div>
   </header>
   <main>
     <div class="container">
-      <h3>US Traffic Fatalities (2022)</h3>
-      <p class="data-label">Cars: 42,514</p>
-      <div class="data-bar">
-        <div class="car-bar"></div>
-      </div>
-      <p class="data-label">Bicycles: 1,230</p>
-      <div class="data-bar">
-        <div class="bicycle-bar"></div>
-      </div>
-      <p><strong>Source:</strong> Insurance Institute for Highway Safety (IIHS)</p>
+      <h3>Who dies on American roads</h3>
+
+      <p class="headline">
+        In 2024, motor vehicles killed <strong>8,155</strong> people
+        who were not in a motor vehicle.
+      </p>
+
+      <table class="chart">
+        <caption>US traffic deaths by road user, 2024 &mdash; 39,254 total</caption>
+        <tbody>
+          <tr>
+            <th scope="row">People inside motor vehicles<span class="note">includes other road users not listed below</span></th>
+            <td class="count">24,871</td>
+            <td class="bar-cell">
+              <div class="data-bar"><div class="bar occupant" style="--pct: 63.4%"></div></div>
+            </td>
+            <td class="pct">63.4%</td>
+          </tr>
+          <tr class="outside">
+            <th scope="row">Pedestrians</th>
+            <td class="count">7,080</td>
+            <td class="bar-cell">
+              <div class="data-bar"><div class="bar pedestrian" style="--pct: 18.0%"></div></div>
+            </td>
+            <td class="pct">18.0%</td>
+          </tr>
+          <tr>
+            <th scope="row">Motorcyclists</th>
+            <td class="count">6,228</td>
+            <td class="bar-cell">
+              <div class="data-bar"><div class="bar motorcyclist" style="--pct: 15.9%"></div></div>
+            </td>
+            <td class="pct">15.9%</td>
+          </tr>
+          <tr class="outside">
+            <th scope="row">Cyclists</th>
+            <td class="count">1,075</td>
+            <td class="bar-cell">
+              <div class="data-bar"><div class="bar cyclist" style="--pct: 2.7%"></div></div>
+            </td>
+            <td class="pct">2.7%</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p class="context">
+        Pedestrians and cyclists were <strong>1 in 5</strong> of everyone killed on US roads
+        &mdash; people who imposed no risk on anyone else and had no steel cage around them.
+        This is about the harm a mode of transport does to <em>other people</em>,
+        not about which mode is safest to be inside of.
+      </p>
+
+      <p class="sources">
+        <strong>Sources:</strong>
+        totals and pedestrian deaths from
+        <a href="https://crashstats.nhtsa.dot.gov/Api/Public/ViewPublication/813791">NHTSA, <em>Overview of Motor Vehicle Traffic Crashes in 2024</em></a>
+        (DOT HS 813 791);
+        cyclist and motorcyclist deaths from
+        <a href="https://www.iihs.org/research-areas/fatality-statistics/detail/bicyclists">IIHS Fatality Facts 2024</a>.
+        &ldquo;People inside motor vehicles&rdquo; is the remainder of the 39,254 total after the
+        categories listed, and includes a small number of other non-occupants.
+      </p>
     </div>
   </main>
 </body>
