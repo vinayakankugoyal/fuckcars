@@ -3,7 +3,7 @@
 // projection. World units are roughly meters; +x is to the right and +z points
 // down the street, away from the rider.
 
-const BEST_KEY = 'bike-lane-dash-best'
+const BEST_KEY = 'bike-lane-dash-best-score'
 
 // What each obstacle teaches when it takes you out, with a real number or two
 // about that kind of crash. Every number links to where it came from.
@@ -121,6 +121,22 @@ const LESSONS = {
       },
     ],
   },
+  passer: {
+    title: 'Hit from behind',
+    text: "A driver came up behind you while you were riding in traffic. You can't see what's coming from behind, so leave the bike lane only when you have to: look over your shoulder, signal, take the lane so drivers can see you, and get back in the bike lane as soon as it's clear.",
+    facts: [
+      {
+        value: '89%',
+        label: 'of NYC cyclist deaths from 2006 to 2016 happened on streets without a bike lane.',
+        source: 'https://www.nyc.gov/html/dot/downloads/pdf/bike-safety-study-fullreport2017.pdf',
+      },
+      {
+        value: '~40%',
+        label: 'of US bike deaths with a known crash type were riders hit from behind, in a 2014 League of American Bicyclists study.',
+        source: 'https://www.bicycleretailer.com/sites/default/files/downloads/article/EBC_report_final.pdf',
+      },
+    ],
+  },
 }
 
 // how the crash screen names what you got past: [one, many]
@@ -133,6 +149,7 @@ const DODGE_LABELS = {
   ebike: ['delivery bike', 'delivery bikes'],
   pothole: ['pothole', 'potholes'],
   car: ['stopped car', 'stopped cars'],
+  passer: ['car from behind', 'cars from behind'],
 }
 
 const $ = (id) => document.getElementById(id)
@@ -141,7 +158,11 @@ const canvas = $('canvas')
 const ctx = canvas.getContext('2d')
 const ui = {
   hud: $('hud'),
-  hudBlocks: $('hud-blocks'),
+  hudScore: $('hud-score'),
+  hudStreak: $('hud-streak'),
+  hudMult: $('hud-mult'),
+  hudStreakFill: $('hud-streak-fill'),
+  warning: $('warning'),
   hudBagels: $('hud-bagels'),
   ready: $('ready'),
   readyBest: $('ready-best'),
@@ -155,6 +176,7 @@ const ui = {
   lessonTitle: $('lesson-title'),
   lessonText: $('lesson-text'),
   facts: $('facts'),
+  runScore: $('run-score'),
   runBlocks: $('run-blocks'),
   runBagels: $('run-bagels'),
   runBest: $('run-best'),
@@ -184,6 +206,11 @@ const BELL_RINGS = 3 // rings you get from each bell you pick up
 const MAX_RINGS = 9
 const BELL_CHANCE = 0.08 // chance a row has a bell floating just past it
 const RING_FX = 0.6 // seconds the ring ripples around the handlebar
+const STREAK_STEP = 3 // seconds in the bike lane for each step up the multiplier
+const MAX_MULT = 5
+const STREAK_GRACE = 1.5 // seconds you can swerve out before the streak is lost
+const PASSER_AFTER = 3 // seconds out of the bike lane before a driver comes up behind you
+const PASSER_SPEED = 8 // how much faster than you that driver is going
 
 const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches
@@ -218,6 +245,12 @@ let ringCooldown = 0
 let ringFx = 0
 let toastTimer = 0
 let bellExplained = false
+let points = 0
+let mult = 1 // score multiplier, built by staying in the bike lane
+let streakTime = 0 // time in the bike lane toward the next step up
+let outTime = 0 // time since you left the bike lane
+let trafficTime = 0 // time out of the bike lane since the last driver came up behind you
+let warningOn = false
 
 const player = { lane: 0, x: LANES[0], y: 0, vy: 0, lean: 0, pedal: 0 }
 
@@ -235,9 +268,9 @@ let parkRFront = 0
 let lampFront = 0
 const buildFront = { '-1': 0, '1': 0 }
 
-let bestDist = 0
+let bestScore = 0
 try {
-  bestDist = Number(localStorage.getItem(BEST_KEY)) || 0
+  bestScore = Number(localStorage.getItem(BEST_KEY)) || 0
 } catch {}
 
 const rand = (a, b) => a + Math.random() * (b - a)
@@ -399,6 +432,7 @@ function addObstacle(kind, lane, z, extra = {}) {
     case 'police':
     case 'car':
     case 'taxi':
+    case 'passer':
       o.w = 1.05
       o.d = 2.2
       break
@@ -420,7 +454,7 @@ function addObstacle(kind, lane, z, extra = {}) {
       o.jumpable = true
       break
   }
-  if (kind === 'car') o.color = pick(CAR_COLORS)
+  if (kind === 'car' || kind === 'passer') o.color = pick(CAR_COLORS)
   if (kind === 'ped') {
     o.shirt = pick(['#e76f51', '#2a9d8f', '#e9c46a', '#264653', '#f4a261', '#8d99ae'])
     o.walk = 0
@@ -553,6 +587,31 @@ function scheduleRow(gap) {
   nextGap = Math.max(gap, nextRow.minGap ? nextRow.minGap() : 0)
 }
 
+// A driver coming up behind you while you ride in traffic. It honks first,
+// and it holds back while every other lane next to you is blocked, so there's
+// always somewhere to go when it arrives.
+function spawnPasser() {
+  const x = LANES[player.lane]
+  if (player.lane === 0 || obstacles.some((o) => o.kind === 'passer')) return
+  // stopped traffic behind you means nobody's coming up that lane
+  if (obstacles.some((o) => o.kind !== 'pothole' && o.z < 0 && Math.abs(o.x - x) < 0.9)) return
+  addObstacle('passer', player.lane, -16)
+  playHorn()
+}
+
+function laneBlockedNear(lane) {
+  const x = LANES[lane]
+  const near = (z0, z1) => overlaps(z0, z1, -0.7, 1.2)
+  if (obstacles.some((o) => o.kind !== 'passer' && !o.jumpable && Math.abs(o.x - x) < o.w / 2 + 0.3 && near(o.z, o.z + o.d))) {
+    return true
+  }
+  return lane === 0 && parked.some((c) => c.door && c.open > 0.3 && near(doorGeom(c).ez, doorGeom(c).hz))
+}
+
+function boxedIn() {
+  return [0, 1, 2].every((l) => l === player.lane || laneBlockedNear(l))
+}
+
 // ---------- game flow ----------
 
 function reset() {
@@ -587,6 +646,13 @@ function reset() {
   ringFx = 0
   toastTimer = 0
   ui.toast.hidden = true
+  points = 0
+  mult = 1
+  streakTime = 0
+  outTime = 0
+  trafficTime = 0
+  warningOn = false
+  ui.warning.hidden = true
 }
 
 // Browsers only allow full screen from a click or key press, so the first
@@ -614,6 +680,7 @@ function startGame() {
     askedFullscreen = true
     setFullscreen(true)
   }
+  ensureAudio()
   reset()
   mode = 'playing'
   ui.ready.hidden = true
@@ -630,10 +697,12 @@ function crash(kind) {
   crashKind = kind
   updateBellUi()
   ui.toast.hidden = true
-  if (dist > bestDist) {
-    bestDist = dist
+  ui.warning.hidden = true
+  warningOn = false
+  if (points > bestScore) {
+    bestScore = Math.floor(points)
     try {
-      localStorage.setItem(BEST_KEY, String(Math.floor(bestDist)))
+      localStorage.setItem(BEST_KEY, String(bestScore))
     } catch {}
   }
 }
@@ -642,9 +711,63 @@ function setText(el, text) {
   if (el.textContent !== text) el.textContent = text
 }
 
+const formatScore = (n) => Math.floor(n).toLocaleString('en-US')
+
 function updateHud() {
-  setText(ui.hudBlocks, `${(dist / BLOCK_LEN).toFixed(1)} blocks`)
+  setText(ui.hudScore, formatScore(points))
   setText(ui.hudBagels, `🥯 ${bagels}`)
+}
+
+let streakFill = -1
+function updateStreakUi(inLane) {
+  setText(ui.hudMult, `×${mult}`)
+  ui.hudStreak.classList.toggle('out', !inLane)
+  // in the bike lane the bar fills toward the next step; out of it, it drains
+  // through the grace period
+  const fill = inLane ? (mult >= MAX_MULT ? 1 : streakTime / STREAK_STEP) : Math.max(0, 1 - outTime / STREAK_GRACE)
+  const pct = Math.round(fill * 100)
+  if (pct !== streakFill) {
+    streakFill = pct
+    ui.hudStreakFill.style.width = `${pct}%`
+  }
+}
+
+function pop(el) {
+  el.classList.remove('pop')
+  void el.offsetWidth // restarts the animation
+  el.classList.add('pop')
+}
+
+// The multiplier climbs while you stay in the bike lane. Swerve out and you
+// have a moment to get back before it's lost; stay out and drivers start
+// coming up behind you.
+function updateStreak(dt, dz) {
+  const inLane = player.lane === 0 && Math.abs(player.x - LANES[0]) < 0.3
+  if (inLane) {
+    outTime = 0
+    trafficTime = 0
+    if (mult < MAX_MULT) {
+      streakTime += dt
+      if (streakTime >= STREAK_STEP) {
+        streakTime -= STREAK_STEP
+        mult++
+        pop(ui.hudStreak)
+      }
+    }
+  } else {
+    outTime += dt
+    trafficTime += dt
+    if (outTime > STREAK_GRACE) {
+      mult = 1
+      streakTime = 0
+    }
+    if (trafficTime > PASSER_AFTER) {
+      trafficTime = 0
+      spawnPasser()
+    }
+  }
+  points += dz * mult
+  updateStreakUi(inLane)
 }
 
 function showCrashCard() {
@@ -652,9 +775,10 @@ function showCrashCard() {
   ui.lessonTitle.textContent = lesson.title
   ui.lessonText.textContent = lesson.text
   ui.facts.replaceChildren(...lesson.facts.map(factItem))
+  ui.runScore.textContent = formatScore(points)
   ui.runBlocks.textContent = (dist / BLOCK_LEN).toFixed(1)
   ui.runBagels.textContent = String(bagels)
-  ui.runBest.textContent = (bestDist / BLOCK_LEN).toFixed(1)
+  ui.runBest.textContent = formatScore(bestScore)
 
   // "You got past 3 cop cars, 2 trucks and 1 pothole before this one."
   const passed = Object.entries(dodgeCounts).sort((a, b) => b[1] - a[1])
@@ -707,9 +831,7 @@ function ringBell() {
 function pickUpBell() {
   rings = Math.min(MAX_RINGS, rings + BELL_RINGS)
   updateBellUi()
-  ui.bell.classList.remove('pop')
-  void ui.bell.offsetWidth // restarts the animation
-  ui.bell.classList.add('pop')
+  pop(ui.bell)
   if (!bellExplained) {
     bellExplained = true
     showToast(coarsePointer ? 'Got a bell! Swipe down or tap it to warn pedestrians' : 'Got a bell! Press B to warn pedestrians')
@@ -728,11 +850,22 @@ function showToast(text) {
 }
 
 let audio = null
-// a bike bell's ding-ding: two strikes, each a few inharmonic partials ringing down
-function playBell() {
+// Browsers only let a page make sound after a click or key press, so starting
+// a ride opens the audio and later sounds reuse it.
+function ensureAudio() {
   try {
     audio = audio || new (window.AudioContext || window.webkitAudioContext)()
     if (audio.state === 'suspended') audio.resume()
+  } catch {
+    audio = null
+  }
+  return audio
+}
+
+// a bike bell's ding-ding: two strikes, each a few inharmonic partials ringing down
+function playBell() {
+  try {
+    if (!ensureAudio()) return
     const out = audio.createGain()
     out.gain.value = 0.16
     out.connect(audio.destination)
@@ -751,6 +884,38 @@ function playBell() {
         osc.connect(env).connect(out)
         osc.start(t)
         osc.stop(t + 0.85)
+      }
+    }
+  } catch {}
+}
+
+// a car horn: two blasts of a detuned pair of notes, softened by a low-pass filter
+function playHorn() {
+  try {
+    if (!ensureAudio()) return
+    const out = audio.createGain()
+    out.gain.value = 0.07
+    const tone = audio.createBiquadFilter()
+    tone.type = 'lowpass'
+    tone.frequency.value = 1800
+    tone.connect(out).connect(audio.destination)
+    for (const [start, len] of [
+      [0, 0.14],
+      [0.2, 0.3],
+    ]) {
+      const t = audio.currentTime + start
+      for (const f of [392, 466]) {
+        const osc = audio.createOscillator()
+        const env = audio.createGain()
+        osc.type = 'sawtooth'
+        osc.frequency.value = f
+        env.gain.setValueAtTime(0.0001, t)
+        env.gain.exponentialRampToValueAtTime(1, t + 0.015)
+        env.gain.setValueAtTime(1, t + len - 0.03)
+        env.gain.exponentialRampToValueAtTime(0.0001, t + len)
+        osc.connect(env).connect(tone)
+        osc.start(t)
+        osc.stop(t + len + 0.02)
       }
     }
   } catch {}
@@ -806,6 +971,14 @@ function overlaps(a0, a1, b0, b1) {
 
 function countDodged() {
   for (const o of obstacles) {
+    // drivers from behind count once they're past you
+    if (o.kind === 'passer') {
+      if (!o.passed && o.z > 0.6) {
+        o.passed = true
+        dodgeCounts.passer = (dodgeCounts.passer || 0) + 1
+      }
+      continue
+    }
     if (!o.passed && o.z + o.d < -0.5) {
       o.passed = true
       dodgeCounts[o.kind] = (dodgeCounts[o.kind] || 0) + 1
@@ -853,7 +1026,8 @@ function update(dt) {
   parkedR = parkedR.filter((c) => c.z + 2.2 > Z_NEAR - 1)
   buildings = buildings.filter((b) => b.z + b.d > Z_NEAR - 1)
   lamps = lamps.filter((l) => l.z > Z_NEAR - 1)
-  obstacles = obstacles.filter((o) => o.z + o.d > Z_NEAR - 1)
+  // drivers from behind start behind the camera and can pull far ahead
+  obstacles = obstacles.filter((o) => (o.kind === 'passer' || o.z + o.d > Z_NEAR - 1) && o.z < Z_FAR + 15)
   treats = treats.filter((t) => t.z > Z_NEAR - 1 && !t.got)
   fillScenery()
 
@@ -873,6 +1047,17 @@ function update(dt) {
   // obstacles that move or react as you get close
   for (const o of obstacles) {
     if (o.kind === 'ebike') o.z -= EBIKE_SPEED * dt
+    if (o.kind === 'passer') {
+      const step = PASSER_SPEED * dt
+      const reaching = o.z + o.d + step > -0.55 && o.z < 0.5 && Math.abs(player.x - o.x) < 0.8
+      // hang back, horn going, while you're boxed in
+      if (!(reaching && boxedIn())) o.z += step
+      o.z += dz // keeps pace with you; the scroll above moved it back
+      // brakes behind stopped traffic ahead and becomes part of it
+      if (o.z > 0.6 && obstacles.some((a) => a !== o && a.kind !== 'pothole' && Math.abs(a.x - o.x) < 0.9 && a.z > o.z + o.d && a.z < o.z + o.d + 1.2)) {
+        o.kind = 'car'
+      }
+    }
     if (o.kind === 'taxi' && o.z < speed * 1.7) {
       o.merge = Math.min(1, o.merge + dt / 0.7)
       o.x = LANES[1] + (LANES[0] - LANES[1]) * (1 - (1 - o.merge) ** 2)
@@ -916,6 +1101,13 @@ function update(dt) {
 
   if (mode !== 'playing') return
 
+  updateStreak(dt, dz)
+  const behind = obstacles.some((o) => o.kind === 'passer' && o.z + o.d < 0)
+  if (behind !== warningOn) {
+    warningOn = behind
+    ui.warning.hidden = !behind
+  }
+
   // collisions: the rider occupies x±0.28, z -0.5..0.5
   const px0 = player.x - 0.28
   const px1 = player.x + 0.28
@@ -938,7 +1130,10 @@ function update(dt) {
     if (!t.got && Math.abs(t.z) < 0.6 && Math.abs(t.x - player.x) < 0.6) {
       t.got = true
       if (t.kind === 'bell') pickUpBell()
-      else bagels++
+      else {
+        bagels++
+        points += 10 * mult
+      }
     }
   }
   updateHud()
@@ -1508,6 +1703,9 @@ function drawObstacle(o) {
     case 'car':
       drawCar(o.x, o.z, o.color, { brake: true })
       break
+    case 'passer':
+      drawCar(o.x, o.z, o.color)
+      break
     case 'pothole':
       drawPothole(o)
       break
@@ -1550,6 +1748,16 @@ function draw() {
   items.push({ z: 0, fn: drawPlayer })
   items.sort((a, b) => b.z - a.z)
   for (const it of items) it.fn()
+
+  // a driver behind you: the bottom of the screen pulses red
+  if (warningOn) {
+    const a = 0.22 + (reduceMotion ? 0 : 0.12 * Math.sin(time * 12))
+    const g = ctx.createLinearGradient(0, H * 0.65, 0, H)
+    g.addColorStop(0, 'rgba(255,70,40,0)')
+    g.addColorStop(1, `rgba(255,70,40,${a})`)
+    ctx.fillStyle = g
+    ctx.fillRect(0, H * 0.65, W, H * 0.35)
+  }
 
   if (mode === 'crashing') {
     ctx.fillStyle = `rgba(255,60,40,${clamp(crashTimer, 0, 0.5) * 0.6})`
@@ -1595,8 +1803,8 @@ makeSkyline()
 resize()
 reset()
 
-if (bestDist > 0) {
-  ui.readyBest.textContent = `Best: ${(bestDist / BLOCK_LEN).toFixed(1)} blocks`
+if (bestScore > 0) {
+  ui.readyBest.textContent = `Best: ${formatScore(bestScore)} points`
   ui.readyBest.hidden = false
 }
 
