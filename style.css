@@ -1,214 +1,502 @@
+/* The street is the page: the game fills the screen and every piece of UI
+   floats on it. NYC street-sign green and Overpass (a descendant of the
+   highway sign alphabet) carry the city; numbers are set in Overpass Mono. */
+:root {
+  color-scheme: dark;
+  --night: #1c1e42; /* the canvas sky, behind everything */
+  --panel: rgba(16, 18, 38, 0.86);
+  --panel-solid: #14162c;
+  --ink: #f4f4ef;
+  --muted: #b4b6cb;
+  --sign: #00704a; /* NYC street sign green */
+  --sign-hover: #00825a;
+  --hazard: #ff8a5c;
+  --link: #9fe0bc;
+  --bell: #ffd65a;
+  --display: "Overpass", "Helvetica Neue", Arial, sans-serif;
+  --mono: "Overpass Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+
 * {
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
+html,
 body {
-  background-color: #000;
-  color: #fff;
-  font-family: monospace;
-  margin: 0;
-  padding: 2rem 1rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-}
-
-header {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  max-width: 100%;
-}
-
-main {
-  width: 100%;
-  max-width: 46rem;
-}
-
-.logo {
-  padding: 10px;
-}
-
-.logo pre {
-  margin: 0;
-}
-
-.logo-text h2 {
-  text-align: center;
-  margin: 0.3em 0;
-}
-
-.container {
-  width: 100%;
-  text-align: center;
-}
-
-.headline {
-  font-size: 1.3em;
-  line-height: 1.5;
-  margin: 1.5em 0;
-}
-
-/* Chart ------------------------------------------------------------------ */
-
-.chart {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-  table-layout: fixed;
-}
-
-.chart caption {
-  caption-side: top;
-  text-align: left;
-  padding-bottom: 0.75em;
-  color: #aaa;
-}
-
-.chart th,
-.chart td {
-  padding: 0.4em 0.6em 0.4em 0;
-  font-weight: normal;
-  vertical-align: middle;
-}
-
-.chart th[scope="row"] {
-  width: 11rem;
-}
-
-.chart .note {
-  display: block;
-  font-size: 0.75em;
-  color: #888;
-}
-
-.chart .count,
-.chart .pct {
-  text-align: right;
-  white-space: nowrap;
-  width: 4.5rem;
-}
-
-.chart .bar-cell {
-  width: auto;
-}
-
-.data-bar {
-  background-color: #222;
-  height: 20px;
-}
-
-/* Each bar's width comes from the --pct set alongside its number in the
-   markup, so the label and the bar can't drift apart. */
-.bar {
-  width: var(--pct);
   height: 100%;
 }
 
-.occupant {
-  background-color: #900;
+body {
+  margin: 0;
+  overflow: hidden;
+  background: var(--night);
+  color: var(--ink);
+  font-family: var(--display);
 }
 
-.motorcyclist {
-  background-color: #c60;
+/* Game ------------------------------------------------------------------- */
+
+.game {
+  position: fixed;
+  inset: 0;
+  outline: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-/* People killed outside a vehicle - the point of the chart. */
-.pedestrian,
-.cyclist {
-  background-color: #4af;
+canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
 }
 
-.chart .outside th {
-  color: #4af;
+.hud {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  left: max(16px, env(safe-area-inset-left, 0px));
+  /* leaves room for the full screen button */
+  right: calc(max(16px, env(safe-area-inset-right, 0px)) + 52px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
 }
 
-.context {
-  line-height: 1.6;
-  margin-top: 2em;
-  text-align: left;
+.chip {
+  padding: 6px 12px 4px;
+  border-radius: 999px;
+  background: rgba(10, 12, 28, 0.55);
+  font: 700 16px/1.2 var(--mono);
+  font-variant-numeric: tabular-nums;
 }
 
-.sources {
-  font-size: 0.8em;
-  color: #888;
-  line-height: 1.6;
-  text-align: left;
+.icon-button {
+  position: absolute;
+  z-index: 2;
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
+  right: max(12px, env(safe-area-inset-right, 0px));
+  width: 40px;
+  height: 40px;
+  padding: 9px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(10, 12, 28, 0.55);
+  color: var(--ink);
+  cursor: pointer;
 }
 
-.sources a {
-  color: #888;
+.icon-button svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-@media (max-width: 40rem) {
-  .logo-text h2 {
-    font-size: 1.1em;
+.icon-button .exit,
+.icon-button.is-full .enter {
+  display: none;
+}
+
+.icon-button.is-full .exit {
+  display: inline;
+}
+
+.icon-button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* the bell power-up, down by your right thumb; only there while you have rings */
+.bell-button {
+  position: absolute;
+  z-index: 2;
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 10px 12px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(10, 12, 28, 0.62);
+  color: var(--bell);
+  font: 700 18px/1 var(--mono);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.bell-button svg {
+  width: 26px;
+  height: 26px;
+  fill: currentColor;
+}
+
+.bell-button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.bell-button.pop {
+  animation: pop 0.35s ease-out;
+}
+
+@keyframes pop {
+  40% {
+    transform: scale(1.18);
+  }
+}
+
+/* touch screens get a bigger target and no keyboard hint */
+@media (pointer: coarse) {
+  .bell-button {
+    padding: 14px 18px 14px 16px;
   }
 
-  .headline {
-    font-size: 1.1em;
+  .bell-button svg {
+    width: 30px;
+    height: 30px;
   }
 
-  .chart {
-    table-layout: auto;
-  }
-
-  .chart th[scope="row"] {
-    width: auto;
-  }
-
-  .chart .note {
+  .bell-button kbd {
     display: none;
   }
+}
 
-  /* Stack each row so narrow screens get a full-width bar under the label.
-     The cells are reordered so the two numbers read together, above the bar. */
-  .chart tbody,
-  .chart td,
-  .chart th {
-    display: block;
-    width: auto;
+.toast {
+  position: absolute;
+  z-index: 2;
+  top: calc(env(safe-area-inset-top, 0px) + 60px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 32px);
+  padding: 10px 16px 7px;
+  border-radius: 12px;
+  background: rgba(10, 12, 28, 0.8);
+  font: 700 16px/1.3 var(--display);
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Overlays --------------------------------------------------------------- */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  overflow-y: auto;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) max(16px, env(safe-area-inset-right, 0px))
+    calc(env(safe-area-inset-bottom, 0px) + 16px) max(16px, env(safe-area-inset-left, 0px));
+  background: radial-gradient(ellipse at center, rgba(8, 10, 26, 0.2), rgba(8, 10, 26, 0.6));
+}
+
+.stack {
+  margin: auto;
+  width: 100%;
+  max-width: 520px;
+  display: grid;
+  gap: 20px;
+}
+
+/* the site's name as a pair of street name signs */
+.signs {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.sign {
+  padding: 0.16em 0.55em 0.04em;
+  border-radius: 0.2em;
+  background: var(--sign);
+  color: #fff;
+  font: 800 clamp(34px, 8vw, 58px) / 1.15 var(--display);
+  white-space: nowrap;
+  box-shadow:
+    inset 0 0 0 0.06em var(--sign),
+    inset 0 0 0 0.1em #fff,
+    0 10px 24px rgba(0, 0, 0, 0.4);
+}
+
+.sign + .sign {
+  margin-left: 0.9em;
+}
+
+.card {
+  width: 100%;
+  padding: 20px 22px;
+  border-radius: 14px;
+  background: var(--panel);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.card h2 {
+  margin: 0 0 6px;
+  font: 800 28px/1.15 var(--display);
+  text-wrap: balance;
+}
+
+.card h3 {
+  margin: 18px 0 8px;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--link);
+}
+
+.card p {
+  margin: 0 0 12px;
+}
+
+.card a {
+  color: var(--link);
+}
+
+.card a:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.controls {
+  margin: 0 0 16px;
+  padding-left: 20px;
+  color: var(--muted);
+}
+
+.controls li {
+  margin: 3px 0;
+}
+
+kbd {
+  display: inline-block;
+  min-width: 1.7em;
+  padding: 1px 6px 0;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: var(--ink);
+  font: 600 13px/1.5 var(--mono);
+  text-align: center;
+}
+
+.start-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+}
+
+.best {
+  font: 500 14px/1.2 var(--mono);
+  color: var(--muted);
+}
+
+/* a button styled like a sign blade, white border line and all */
+.sign-button {
+  padding: 13px 22px 10px;
+  border: none;
+  border-radius: 10px;
+  background: var(--sign);
+  color: #fff;
+  font: 800 18px/1 var(--display);
+  cursor: pointer;
+  box-shadow:
+    inset 0 0 0 3px var(--sign),
+    inset 0 0 0 5px #fff;
+}
+
+.sign-button:hover {
+  background: var(--sign-hover);
+  box-shadow:
+    inset 0 0 0 3px var(--sign-hover),
+    inset 0 0 0 5px #fff;
+}
+
+.sign-button:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+/* Crash screen ----------------------------------------------------------- */
+
+.card-wide {
+  margin: auto;
+  max-width: 580px;
+  max-height: 100%;
+  overflow-y: auto;
+  padding-bottom: 0;
+}
+
+.eyebrow {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--hazard);
+}
+
+.card .eyebrow {
+  margin-bottom: 4px;
+}
+
+/* the numbers behind this crash, right under the lesson */
+/* one grid for all the facts, so the numbers share a column as wide as the widest */
+.facts {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 14px 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 12px 16px;
+  align-items: baseline;
+  line-height: 1.45;
+}
+
+.facts li {
+  display: contents;
+}
+
+.fact-value {
+  font: 700 22px/1.1 var(--mono);
+  color: var(--hazard);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.facts a {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.run {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.run div {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.run dt {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.run dd {
+  margin: 0;
+  font: 700 22px/1.3 var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.dodged {
+  font-size: 15px;
+}
+
+/* keeps the button in reach however far down the card you've scrolled */
+.again {
+  position: sticky;
+  bottom: 0;
+  margin: 16px -22px 0;
+  padding: 12px 22px 18px;
+  background: var(--panel-solid);
+}
+
+.noscript {
+  position: absolute;
+  inset: auto 0 45%;
+  margin: 0;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bell-button.pop {
+    animation: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 18px;
   }
 
-  .chart tr {
-    display: flex;
+  .card h2 {
+    font-size: 24px;
+  }
+
+  .again {
+    margin: 16px -18px 0;
+    padding: 12px 18px 16px;
+  }
+
+  .facts {
+    column-gap: 12px;
+  }
+
+  .fact-value {
+    font-size: 18px;
+  }
+}
+
+/* phones on their side: the signs go side by side so Start stays on screen */
+@media (max-height: 520px) {
+  .stack {
+    gap: 12px;
+  }
+
+  .signs {
+    flex-direction: row;
     flex-wrap: wrap;
-    align-items: baseline;
-    margin-bottom: 1em;
+    gap: 8px 10px;
   }
 
-  .chart th[scope="row"] {
-    order: 1;
-    flex: 0 0 100%;
-    padding-bottom: 0.1em;
+  .sign {
+    font-size: 28px;
   }
 
-  .chart .count {
-    order: 2;
+  .sign + .sign {
+    margin-left: 0;
   }
 
-  .chart .pct {
-    order: 3;
+  .card {
+    padding: 14px 18px;
+    font-size: 14px;
   }
 
-  .chart .count,
-  .chart .pct {
-    text-align: left;
-    width: auto;
-    padding: 0 0 0.3em 0;
-    color: #aaa;
+  .card h2 {
+    font-size: 22px;
   }
 
-  .chart .count::after {
-    content: "\00A0\00B7\00A0";
+  .card p,
+  .controls {
+    margin-bottom: 10px;
   }
 
-  .chart .bar-cell {
-    order: 4;
-    flex: 0 0 100%;
+  .again {
+    margin: 12px -18px 0;
+    padding: 10px 18px 14px;
   }
 }
