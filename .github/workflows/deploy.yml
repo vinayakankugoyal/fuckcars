@@ -1,0 +1,78 @@
+# Checks the game on every pull request and publishes the site to GitHub Pages
+# on every push to main. Publishing from here needs Settings > Pages > Source
+# set to "GitHub Actions". While it's still "Deploy from a branch", GitHub's
+# own Pages build keeps publishing main and this workflow only runs the check.
+name: Check and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check that game.js parses
+        run: node --check game.js
+
+  pages-source:
+    if: github.event_name != 'pull_request'
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      pages: read
+    outputs:
+      type: ${{ steps.source.outputs.type }}
+    steps:
+      - name: Check where Pages publishes from
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          type=$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq .build_type 2>/dev/null || echo unknown)
+          echo "type=$type" >> "$GITHUB_OUTPUT"
+          if [ "$type" != workflow ]; then
+            echo "::notice::Pages is set to deploy from a branch, so GitHub's own build publishes main. Set Settings > Pages > Source to GitHub Actions to publish from this workflow."
+          fi
+
+  deploy:
+    needs: pages-source
+    if: needs.pages-source.outputs.type == 'workflow'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    # one deployment at a time, and let a running one finish
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      - name: Collect the site
+        # every tracked file except the workflows
+        run: |
+          mkdir -p _site
+          git ls-files -z | grep -zv '^\.github/' | xargs -0 cp --parents -t _site
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
