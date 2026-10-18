@@ -5,93 +5,82 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FCRB</title>
+  <meta name="description" content="Bike Lane Dash: ride a New York City bike lane and dodge cop cars, double-parked trucks, opening car doors, cabs, and potholes.">
+  <meta property="og:title" content="fuck cars ride bikes">
+  <meta property="og:description" content="Ride a New York City bike lane and dodge everything parked in it.">
+  <meta property="og:url" content="https://fuckcarsridebikes.com/">
+  <meta property="og:type" content="website">
   <link rel="stylesheet" href="style.css">
+  <script type="module" src="game.js"></script>
 </head>
 
 <body>
   <header>
     <div class="logo" aria-hidden="true">
-      <pre>
-   __o
- _ \<_
-(_)/(_)
-      </pre>
+      <pre>   __o
+ _ \&lt;_
+(_)/(_)</pre>
     </div>
-    <div class="logo-text">
-      <h2>
-      fuck cars ride bikes
-      </h2>
-    </div>
+    <h1>fuck cars ride bikes</h1>
     <div class="logo" aria-hidden="true">
-    <pre>
- o__
- _>/ _
-(_)\(_)
-    </pre>
-  </div>
+      <pre> o__
+ _&gt;/ _
+(_)\(_)</pre>
+    </div>
   </header>
+
   <main>
-    <div class="container">
-      <h3>Who dies on American roads</h3>
+    <div id="game" class="game" tabindex="0" aria-label="Bike Lane Dash. Use the left and right arrow keys to change lanes and up or space to hop.">
+      <canvas id="canvas"></canvas>
 
-      <p class="headline">
-        In 2024, motor vehicles killed <strong>8,155</strong> people
-        who were not in a motor vehicle.
-      </p>
+      <div id="hud" class="hud" hidden>
+        <span id="hud-blocks"></span>
+        <span id="hud-bagels"></span>
+      </div>
 
-      <table class="chart">
-        <caption>US traffic deaths by road user, 2024 &mdash; 39,254 total</caption>
-        <tbody>
-          <tr>
-            <th scope="row">People inside motor vehicles<span class="note">includes other road users not listed below</span></th>
-            <td class="count">24,871</td>
-            <td class="bar-cell">
-              <div class="data-bar"><div class="bar occupant" style="--pct: 63.4%"></div></div>
-            </td>
-            <td class="pct">63.4%</td>
-          </tr>
-          <tr class="outside">
-            <th scope="row">Pedestrians</th>
-            <td class="count">7,080</td>
-            <td class="bar-cell">
-              <div class="data-bar"><div class="bar pedestrian" style="--pct: 18.0%"></div></div>
-            </td>
-            <td class="pct">18.0%</td>
-          </tr>
-          <tr>
-            <th scope="row">Motorcyclists</th>
-            <td class="count">6,228</td>
-            <td class="bar-cell">
-              <div class="data-bar"><div class="bar motorcyclist" style="--pct: 15.9%"></div></div>
-            </td>
-            <td class="pct">15.9%</td>
-          </tr>
-          <tr class="outside">
-            <th scope="row">Cyclists</th>
-            <td class="count">1,075</td>
-            <td class="bar-cell">
-              <div class="data-bar"><div class="bar cyclist" style="--pct: 2.7%"></div></div>
-            </td>
-            <td class="pct">2.7%</td>
-          </tr>
-        </tbody>
-      </table>
+      <div id="ready" class="overlay">
+        <div class="card">
+          <h2>Bike Lane Dash</h2>
+          <p>
+            Ride a Manhattan bike lane at rush hour. Dodge cop cars, double-parked trucks, opening car doors, and
+            everyone else who thinks the bike lane is theirs. When it's blocked, you have to merge into traffic.
+            Grab bagels along the way.
+          </p>
+          <ul class="controls">
+            <li><kbd>←</kbd> <kbd>→</kbd> or swipe to change lanes</li>
+            <li><kbd>↑</kbd> / <kbd>space</kbd> or swipe up to hop potholes</li>
+          </ul>
+          <button type="button" data-start>Start riding</button>
+        </div>
+      </div>
 
-      <p class="context">
-        Pedestrians and cyclists were <strong>1 in 5</strong> of everyone killed on US roads
-        &mdash; people who imposed no risk on anyone else and had no steel cage around them.
-      </p>
+      <div id="crashed" class="overlay" hidden>
+        <div id="crash-card" class="card card-wide">
+          <p class="eyebrow">You crashed</p>
+          <h2 id="lesson-title"></h2>
+          <p id="lesson-text"></p>
 
-      <p class="sources">
-        <strong>Sources:</strong>
-        totals and pedestrian deaths from
-        <a href="https://crashstats.nhtsa.dot.gov/Api/Public/ViewPublication/813791">NHTSA, <em>Overview of Motor Vehicle Traffic Crashes in 2024</em></a>
-        (DOT HS 813 791);
-        cyclist and motorcyclist deaths from
-        <a href="https://www.iihs.org/research-areas/fatality-statistics/detail/bicyclists">IIHS Fatality Facts 2024</a>.
-        &ldquo;People inside motor vehicles&rdquo; is the remainder of the 39,254 total after the
-        categories listed, and includes a small number of other non-occupants.
-      </p>
+          <h3>Your ride</h3>
+          <dl class="run">
+            <div><dt>Blocks</dt><dd id="run-blocks"></dd></div>
+            <div><dt>Bagels</dt><dd id="run-bagels"></dd></div>
+            <div><dt>Best</dt><dd id="run-best"></dd></div>
+          </dl>
+          <p id="dodged" class="dodged" hidden></p>
+
+          <h3>By the numbers</h3>
+          <ul id="facts" class="facts"></ul>
+
+          <h3>The rules</h3>
+          <ul id="rules" class="rules"></ul>
+
+          <div class="again">
+            <button id="again" type="button" data-start>Ride again</button>
+          </div>
+        </div>
+      </div>
+
+      <noscript><p class="noscript">Bike Lane Dash needs JavaScript to run.</p></noscript>
     </div>
   </main>
 </body>
