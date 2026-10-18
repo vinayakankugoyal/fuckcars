@@ -26,9 +26,17 @@
     <canvas id="canvas"></canvas>
 
     <div id="hud" class="hud" hidden>
-      <span id="hud-blocks" class="chip"></span>
+      <div class="hud-group">
+        <span id="hud-score" class="chip" aria-label="Score"></span>
+        <span id="hud-streak" class="chip streak" aria-label="Bike lane multiplier">
+          <span id="hud-mult"></span>
+          <span class="streak-bar" aria-hidden="true"><span id="hud-streak-fill"></span></span>
+        </span>
+      </div>
       <span id="hud-bagels" class="chip"></span>
     </div>
+
+    <div id="warning" class="warning" role="alert" hidden>Car behind you!</div>
 
     <button id="fullscreen" class="icon-button" type="button" aria-label="Full screen" hidden>
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -58,8 +66,8 @@
           <h2>Bike Lane Dash</h2>
           <p>
             Ride a Manhattan bike lane at rush hour. Dodge cop cars, double-parked trucks, opening car doors, and
-            everyone else who thinks the bike lane is theirs. When it's blocked, you have to merge into traffic.
-            Grab bagels along the way, and grab a bell to warn pedestrians.
+            everyone else who thinks the bike lane is theirs. Stay in the bike lane to build your score multiplier;
+            hang around in traffic and drivers come up behind you. Grab bagels, and a bell to warn pedestrians.
           </p>
           <ul class="controls">
             <li><kbd>←</kbd> <kbd>→</kbd> or swipe to change lanes</li>
@@ -83,6 +91,7 @@
 
         <h3>Your ride</h3>
         <dl class="run">
+          <div><dt>Score</dt><dd id="run-score"></dd></div>
           <div><dt>Blocks</dt><dd id="run-blocks"></dd></div>
           <div><dt>Bagels</dt><dd id="run-bagels"></dd></div>
           <div><dt>Best</dt><dd id="run-best"></dd></div>

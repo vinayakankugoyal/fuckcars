@@ -13,6 +13,7 @@
   --hazard: #ff8a5c;
   --link: #9fe0bc;
   --bell: #ffd65a;
+  --danger-solid: #c2410c; /* white text on it stays readable */
   --display: "Overpass", "Helvetica Neue", Arial, sans-serif;
   --mono: "Overpass Mono", ui-monospace, Menlo, Consolas, monospace;
 }
@@ -76,6 +77,63 @@ canvas {
   background: rgba(10, 12, 28, 0.55);
   font: 700 16px/1.2 var(--mono);
   font-variant-numeric: tabular-nums;
+}
+
+.hud-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* the bike lane multiplier: green while you're in the lane, orange (and
+   draining) while you're out of it */
+.streak {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 112, 74, 0.9);
+  transition: background-color 0.2s;
+}
+
+.streak.out {
+  background: var(--danger-solid);
+}
+
+.streak-bar {
+  width: 34px;
+  height: 6px;
+  margin-bottom: 2px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.28);
+  overflow: hidden;
+}
+
+.streak-bar span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: #fff;
+}
+
+.warning {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 84px);
+  transform: translateX(-50%);
+  padding: 10px 18px 7px;
+  border-radius: 12px;
+  background: var(--danger-solid);
+  font: 800 18px/1.2 var(--display);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: throb 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes throb {
+  to {
+    transform: translateX(-50%) scale(1.06);
+  }
 }
 
 .icon-button {
@@ -148,7 +206,8 @@ canvas {
   outline-offset: 2px;
 }
 
-.bell-button.pop {
+.bell-button.pop,
+.streak.pop {
   animation: pop 0.35s ease-out;
 }
 
@@ -390,7 +449,7 @@ kbd {
 
 .run {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   margin: 0 0 10px;
 }
@@ -433,7 +492,9 @@ kbd {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bell-button.pop {
+  .bell-button.pop,
+  .streak.pop,
+  .warning {
     animation: none;
   }
 }
@@ -458,6 +519,10 @@ kbd {
 
   .fact-value {
     font-size: 18px;
+  }
+
+  .run {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
