@@ -3,85 +3,99 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FCRB</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Bike Lane Dash · fuck cars ride bikes</title>
   <meta name="description" content="Bike Lane Dash: ride a New York City bike lane and dodge cop cars, double-parked trucks, opening car doors, cabs, and potholes.">
+  <meta name="theme-color" content="#1c1e42">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta property="og:title" content="fuck cars ride bikes">
   <meta property="og:description" content="Ride a New York City bike lane and dodge everything parked in it.">
   <meta property="og:url" content="https://fuckcarsridebikes.com/">
   <meta property="og:type" content="website">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;800&family=Overpass+Mono:wght@500;700&display=swap">
   <link rel="stylesheet" href="style.css">
   <script type="module" src="game.js"></script>
 </head>
 
 <body>
-  <header>
-    <div class="logo" aria-hidden="true">
-      <pre>   __o
- _ \&lt;_
-(_)/(_)</pre>
+  <main id="game" class="game" tabindex="-1" aria-label="Bike Lane Dash. Use the left and right arrow keys to change lanes and up or space to hop.">
+    <canvas id="canvas"></canvas>
+
+    <div id="hud" class="hud" hidden>
+      <span id="hud-blocks" class="chip"></span>
+      <span id="hud-bagels" class="chip"></span>
     </div>
-    <h1>fuck cars ride bikes</h1>
-    <div class="logo" aria-hidden="true">
-      <pre> o__
- _&gt;/ _
-(_)\(_)</pre>
-    </div>
-  </header>
 
-  <main>
-    <div id="game" class="game" tabindex="0" aria-label="Bike Lane Dash. Use the left and right arrow keys to change lanes and up or space to hop.">
-      <canvas id="canvas"></canvas>
+    <button id="fullscreen" class="icon-button" type="button" aria-label="Full screen" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path class="enter" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
+        <path class="exit" d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5" />
+      </svg>
+    </button>
 
-      <div id="hud" class="hud" hidden>
-        <span id="hud-blocks"></span>
-        <span id="hud-bagels"></span>
-      </div>
+    <button id="bell" class="bell-button" type="button" aria-label="Ring your bell" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2.5c.8 0 1.4.6 1.4 1.4v.6a6 6 0 0 1 4.6 5.8v3.9l1.7 2.3c.4.6 0 1.5-.8 1.5H5.1c-.8 0-1.2-.9-.8-1.5L6 14.2v-3.9a6 6 0 0 1 4.6-5.8v-.6c0-.8.6-1.4 1.4-1.4Z" />
+        <path d="M9.6 19.5h4.8a2.4 2.4 0 0 1-4.8 0Z" />
+      </svg>
+      <span id="bell-count"></span>
+      <kbd>B</kbd>
+    </button>
 
-      <div id="ready" class="overlay">
+    <div id="toast" class="toast" role="status" hidden></div>
+
+    <div id="ready" class="overlay">
+      <div class="stack">
+        <h1 class="signs" aria-label="fuck cars ride bikes">
+          <span class="sign">Fuck Cars</span>
+          <span class="sign">Ride Bikes</span>
+        </h1>
         <div class="card">
           <h2>Bike Lane Dash</h2>
           <p>
             Ride a Manhattan bike lane at rush hour. Dodge cop cars, double-parked trucks, opening car doors, and
             everyone else who thinks the bike lane is theirs. When it's blocked, you have to merge into traffic.
-            Grab bagels along the way.
+            Grab bagels along the way, and grab a bell to warn pedestrians.
           </p>
           <ul class="controls">
             <li><kbd>←</kbd> <kbd>→</kbd> or swipe to change lanes</li>
-            <li><kbd>↑</kbd> / <kbd>space</kbd> or swipe up to hop potholes</li>
+            <li><kbd>↑</kbd> <kbd>space</kbd> or swipe up to hop potholes</li>
+            <li><kbd>B</kbd> <kbd>↓</kbd> or swipe down to ring your bell</li>
           </ul>
-          <button type="button" data-start>Start riding</button>
-        </div>
-      </div>
-
-      <div id="crashed" class="overlay" hidden>
-        <div id="crash-card" class="card card-wide">
-          <p class="eyebrow">You crashed</p>
-          <h2 id="lesson-title"></h2>
-          <p id="lesson-text"></p>
-
-          <h3>Your ride</h3>
-          <dl class="run">
-            <div><dt>Blocks</dt><dd id="run-blocks"></dd></div>
-            <div><dt>Bagels</dt><dd id="run-bagels"></dd></div>
-            <div><dt>Best</dt><dd id="run-best"></dd></div>
-          </dl>
-          <p id="dodged" class="dodged" hidden></p>
-
-          <h3>By the numbers</h3>
-          <ul id="facts" class="facts"></ul>
-
-          <h3>The rules</h3>
-          <ul id="rules" class="rules"></ul>
-
-          <div class="again">
-            <button id="again" type="button" data-start>Ride again</button>
+          <div class="start-row">
+            <button type="button" class="sign-button" data-start>Start riding</button>
+            <span id="ready-best" class="best" hidden></span>
           </div>
         </div>
       </div>
-
-      <noscript><p class="noscript">Bike Lane Dash needs JavaScript to run.</p></noscript>
     </div>
+
+    <div id="crashed" class="overlay" hidden>
+      <div id="crash-card" class="card card-wide">
+        <p class="eyebrow">You crashed</p>
+        <h2 id="lesson-title"></h2>
+        <p id="lesson-text"></p>
+        <ul id="facts" class="facts"></ul>
+
+        <h3>Your ride</h3>
+        <dl class="run">
+          <div><dt>Blocks</dt><dd id="run-blocks"></dd></div>
+          <div><dt>Bagels</dt><dd id="run-bagels"></dd></div>
+          <div><dt>Best</dt><dd id="run-best"></dd></div>
+        </dl>
+        <p id="dodged" class="dodged" hidden></p>
+
+        <div class="again">
+          <button id="again" type="button" class="sign-button" data-start>Ride again</button>
+        </div>
+      </div>
+    </div>
+
+    <noscript><p class="noscript">Bike Lane Dash needs JavaScript to run.</p></noscript>
   </main>
 </body>
 

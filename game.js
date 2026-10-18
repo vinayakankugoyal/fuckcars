@@ -5,39 +5,121 @@
 
 const BEST_KEY = 'bike-lane-dash-best'
 
-// what each obstacle teaches when it takes you out
+// What each obstacle teaches when it takes you out, with a real number or two
+// about that kind of crash. Every number links to where it came from.
 const LESSONS = {
   door: {
     title: 'Doored!',
-    text: 'A car door swung open right in front of you. Painted bike lanes often run through the "door zone" of parked cars, so ride a door\'s width away when you can and watch for people sitting in parked cars. New York law (VTL §1214) says nobody may open a car door into traffic unless it\'s safe. Drivers and passengers should use the Dutch reach: open the door with the far hand so you turn and look back.',
+    text: "A car door swung open right in front of you. Painted bike lanes often run through the door zone of parked cars, so watch for people sitting in them and leave a door's width when you can. Opening a door into traffic is illegal in New York unless it's safe; drivers and passengers should use the Dutch reach, opening with the far hand so they turn and look.",
+    facts: [
+      {
+        value: '6+',
+        label: 'NYC cyclists killed by opening car doors from 2012 to 2019. Police wrote a ticket in just one case.',
+        source: 'https://gothamist.com/news/what-is-nyc-doing-to-prevent-cyclists-from-getting-fatally-doored-basically-nothing',
+      },
+      {
+        value: '1 in 5',
+        label: 'bike crashes in Chicago in 2011 was a dooring. Illinois was the only state counting them.',
+        source: 'https://wnyc.org/story/285015-data-from-only-state-that-tracks-dooring-show-its-big-problem/',
+      },
+    ],
   },
   police: {
     title: 'Blocked by a parked police car',
-    text: 'Police and other official vehicles regularly park in bike lanes, forcing riders out into traffic. NYC rules let you leave the bike lane when it\'s blocked: look over your shoulder, signal, and merge early instead of swerving at the last second. You can report blocked bike lanes to 311.',
+    text: "Police cars park in bike lanes all the time, pushing riders out into traffic. You're allowed to leave a blocked bike lane: look over your shoulder, signal, and merge early instead of swerving at the last second.",
+    facts: [
+      {
+        value: '1.9%',
+        label: 'of 76,000+ complaints to 311 about illegal parking in bike lanes ended in a ticket (2016 to 2023). The fine is $115.',
+        source: 'https://usa.streetsblog.org/2023/04/06/cops-in-nyc-ticket-only-2-of-blocked-bike-lanes-analysis',
+      },
+    ],
   },
   truck: {
     title: 'Double-parked truck',
-    text: 'Delivery trucks double-park in the bike lane all day. They hide what\'s ahead and push you into traffic, and big trucks have huge blind spots: if you can\'t see the driver in their mirror, they can\'t see you. Never squeeze along the side of a truck that might turn.',
+    text: "Delivery trucks double-park in the bike lane all day. They hide what's ahead, and big trucks have huge blind spots: if you can't see the driver in their mirror, they can't see you.",
+    facts: [
+      {
+        value: '~50%',
+        label: 'of the cyclists killed in NYC in 2019 died in crashes involving large trucks.',
+        source: 'https://www.nyc.gov/assets/dcas/downloads/pdf/fleet/Sideguard-Letter-Final.pdf',
+      },
+      {
+        value: '40%',
+        label: 'of the time, the bike lane on one Harlem block was blocked, in a 2018 study of traffic camera footage.',
+        source: 'https://www.engadget.com/2018-03-16-new-yorker-machine-learning-blocked-bike-lanes.html',
+      },
+    ],
   },
   taxi: {
     title: 'Cut off by a cab',
-    text: 'Taxis and rideshares dive into the bike lane to pick up and drop off passengers, often without signaling. Watch for blinkers, brake lights, and anyone waving from the curb, and keep your hands covering the brakes.',
+    text: 'Cabs and rideshares dive into the bike lane to pick up and drop off, often without signaling. Watch for blinkers, brake lights, and anyone waving from the curb, and keep your hands on the brakes.',
+    facts: [
+      {
+        value: '239M',
+        label: 'Uber and Lyft trips in NYC in 2024, every one of them starting and ending at a curb.',
+        source: 'https://www.nyc.gov/assets/tlc/downloads/pdf/preliminary_budget_hearing_testimony_3_19_25.pdf',
+      },
+      {
+        value: '3rd',
+        label: 'place for taxis among bike lane blockers on 492 Manhattan blocks surveyed by Hunter College, behind cars and small trucks.',
+        source: 'https://www.dnainfo.com/20091203/manhattan/study-finds-city-bike-lanes-blocked-by-cars-trucks-taxis/',
+      },
+    ],
   },
   ped: {
     title: 'Pedestrian on a phone',
-    text: 'People step out from between parked cars, usually looking at their phones instead of the bike lane. Slow down near crosswalks and bus stops, ring your bell early, and always yield to pedestrians in the crosswalk.',
+    text: 'People step out from between parked cars with their eyes on their phones. Slow down near crosswalks and bus stops, ring your bell early, and always yield to people on foot.',
+    facts: [
+      {
+        value: '105',
+        label: 'of the 112 pedestrians killed in NYC in 2025 died in crashes involving motor vehicles.',
+        source: 'https://cleantechnica.com/2026/10/07/nyc-ebike-deaths-motor-vehicles/',
+      },
+    ],
   },
   ebike: {
-    title: 'Wrong-way e-bike',
-    text: 'Riders going the wrong way in the bike lane close the gap much faster than you expect. Always ride with traffic, give oncoming riders room, and use your bell or voice early.',
+    title: 'Wrong-way delivery bike',
+    text: "Riders coming the wrong way down the bike lane close the gap fast, especially on e-bikes. Ride with traffic, give oncoming riders room, and use your bell or voice early. Whoever's on that delivery bike is doing one of the most dangerous jobs in the city.",
+    facts: [
+      {
+        value: '25+',
+        label: 'delivery workers on bikes, e-bikes, and mopeds killed in NYC traffic since 2021.',
+        source: 'https://www.nyc.gov/html/dot/downloads/pdf/delivery-safety-letter-to-apps.pdf',
+      },
+      {
+        value: '~1 in 3',
+        label: 'e-bike and moped delivery riders have been hurt on the job badly enough to miss work or need medical care.',
+        source: 'https://jalopnik.com/delivery-rider-is-the-most-deadly-job-in-new-york-1851517980',
+      },
+    ],
   },
   pothole: {
     title: 'Pothole!',
-    text: 'Potholes, steel plates, and sunken grates can send you over the handlebars. Scan the pavement ahead, not just the traffic, keep a firm grip, and report potholes to 311.',
+    text: 'Potholes, steel plates, and sunken grates can send you over the handlebars. Scan the pavement ahead, not just the traffic, and report potholes to 311.',
+    facts: [
+      {
+        value: '180,570',
+        label: 'potholes NYC DOT filled in fiscal year 2025, about 500 a day.',
+        source: 'https://hellgatenyc.com/mamdani-filling-holes-fast/',
+      },
+    ],
   },
   car: {
     title: 'Stuck in traffic',
-    text: 'The traffic lanes aren\'t an escape hatch: they\'re full of cars and buses that stop without warning. If you have to leave the bike lane, look over your shoulder, signal, and merge with plenty of space, then get back in the bike lane as soon as it\'s clear.',
+    text: "The traffic lanes aren't an escape hatch: cars and buses stop without warning. When you have to leave the bike lane, look over your shoulder, signal, merge with plenty of room, and get back in as soon as it's clear.",
+    facts: [
+      {
+        value: '27M',
+        label: 'fewer vehicles drove into Manhattan below 60th Street in 2025, the first year of congestion pricing.',
+        source: 'https://www.amny.com/news/congestion-pricing-27-million-fewer-vehicles',
+      },
+      {
+        value: '30',
+        label: 'people were killed riding bikes in NYC in 2023. Crashes with cars and trucks were the leading cause.',
+        source: 'https://www.fox5ny.com/news/nyc-cyclist-deaths-hit-record-high-in-2023',
+      },
+    ],
   },
 }
 
@@ -48,72 +130,10 @@ const DODGE_LABELS = {
   truck: ['truck', 'trucks'],
   taxi: ['cab', 'cabs'],
   ped: ['pedestrian', 'pedestrians'],
-  ebike: ['wrong-way rider', 'wrong-way riders'],
+  ebike: ['delivery bike', 'delivery bikes'],
   pothole: ['pothole', 'potholes'],
   car: ['stopped car', 'stopped cars'],
 }
-
-// shown on the crash screen; every figure links to where it came from
-const STATS = [
-  {
-    value: '30',
-    label: 'people killed riding bikes in NYC in 2023, the most in over two decades',
-    source: 'https://www.fox5ny.com/news/nyc-cyclist-deaths-hit-record-high-in-2023',
-  },
-  {
-    value: '23',
-    label: 'of those 30 were riding e-bikes',
-    source: 'https://www.cbsnews.com/newyork/news/in-response-to-numerous-fatalities-new-york-city-launches-e-bike-safety-education-campaign',
-  },
-  {
-    value: '~400',
-    label: 'bike riders seriously injured in NYC that same year',
-    source: 'https://bronx.news12.com/record-levels-of-cyclist-deaths-for-nyc-in-2023',
-  },
-  {
-    value: '1.9%',
-    label: 'of 76,000+ complaints to 311 about blocked bike lanes ended in a ticket (2016 to 2023)',
-    source: 'https://usa.streetsblog.org/2023/04/06/cops-in-nyc-ticket-only-2-of-blocked-bike-lanes-analysis',
-  },
-  {
-    value: '1,075',
-    label: 'people killed riding bikes on US roads in 2024',
-    source: 'https://www.iihs.org/research-areas/fatality-statistics/detail/bicyclists',
-  },
-]
-
-const RULES = [
-  {
-    cite: 'NY VTL §1214',
-    text: 'No one may open a car door on the traffic side until it is reasonably safe to do so.',
-    source: 'https://newyork.public.law/laws/n.y._vehicle_and_traffic_law_section_1214',
-  },
-  {
-    cite: '34 RCNY §4-08(e)',
-    text: 'Stopping, standing, or parking in a bike lane is banned, with a $115 fine.',
-    source: 'https://usa.streetsblog.org/2023/04/06/cops-in-nyc-ticket-only-2-of-blocked-bike-lanes-analysis',
-  },
-  {
-    cite: '34 RCNY §4-12(p)',
-    text: 'Ride in the bike lane when there is one, but you may leave it to turn or when it is blocked or unsafe.',
-    source: 'https://nyc.gov/html/dot/downloads/pdf/bicyclerules-english.pdf',
-  },
-  {
-    cite: 'NY VTL §1236',
-    text: 'At night you need a white front light visible from 500 ft and a red or amber rear light visible from 300 ft.',
-    source: 'https://newyork.public.law/laws/n.y._vehicle_&_traffic_law_section_1236',
-  },
-  {
-    cite: 'NY VTL §1238',
-    text: 'Riders and passengers under 14 must wear a helmet.',
-    source: 'https://healthweb-back.health.ny.gov/publications/0667.pdf',
-  },
-  {
-    cite: 'NYC e-bike limit',
-    text: 'Since October 24, 2025, e-bikes and e-scooters are capped at 15 mph citywide.',
-    source: 'https://ny1.com/nyc/all-boroughs/news/2025/10/24/new-15-mile-per-hour-speed-limit-for-e-bikes-goes-into-effect',
-  },
-]
 
 const $ = (id) => document.getElementById(id)
 const wrap = $('game')
@@ -124,11 +144,17 @@ const ui = {
   hudBlocks: $('hud-blocks'),
   hudBagels: $('hud-bagels'),
   ready: $('ready'),
+  readyBest: $('ready-best'),
+  fullscreen: $('fullscreen'),
+  bell: $('bell'),
+  bellCount: $('bell-count'),
+  toast: $('toast'),
   crashed: $('crashed'),
   crashCard: $('crash-card'),
   again: $('again'),
   lessonTitle: $('lesson-title'),
   lessonText: $('lesson-text'),
+  facts: $('facts'),
   runBlocks: $('run-blocks'),
   runBagels: $('run-bagels'),
   runBest: $('run-best'),
@@ -153,8 +179,14 @@ const ACCEL = 0.22 // units/s per second
 const ATTRACT_SPEED = 6 // how fast the street rolls behind the start screen
 const BLOCK_LEN = 80 // a Manhattan street block is ~80m
 const DOOR_LEN = 0.95
+const EBIKE_SPEED = 4 // how much faster than the street a wrong-way rider comes at you
+const BELL_RINGS = 3 // rings you get from each bell you pick up
+const MAX_RINGS = 9
+const BELL_CHANCE = 0.08 // chance a row has a bell floating just past it
+const RING_FX = 0.6 // seconds the ring ripples around the handlebar
 
 const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches
 
 let W = 0
 let H = 0
@@ -178,7 +210,14 @@ let bagels = 0
 let rowAccum = 0
 let nextGap = 0
 let lastBlocked = [] // lanes the previous row closed
+let nextRow = null // what spawns once the street has rolled nextGap further
 let dodgeCounts = {}
+let rows = 0 // rows spawned this ride
+let rings = 0 // bell rings left
+let ringCooldown = 0
+let ringFx = 0
+let toastTimer = 0
+let bellExplained = false
 
 const player = { lane: 0, x: LANES[0], y: 0, vy: 0, lean: 0, pedal: 0 }
 
@@ -222,9 +261,10 @@ function shade(hex, k) {
 
 function resize() {
   const rect = canvas.getBoundingClientRect()
-  const dpr = Math.min(window.devicePixelRatio || 1, 2)
   W = rect.width
   H = rect.height
+  // on big screens keep the canvas under ~4.5M pixels so it stays smooth
+  const dpr = Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(4.5e6 / Math.max(1, W * H)))
   canvas.width = Math.round(W * dpr)
   canvas.height = Math.round(H * dpr)
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
@@ -394,90 +434,123 @@ function clearParked(z0, z1) {
 }
 
 function addTreats(lane, z) {
-  for (let i = 0; i < 4; i++) treats.push({ x: LANES[lane], z: z + i * 1.8, got: false })
+  for (let i = 0; i < 4; i++) treats.push({ kind: 'bagel', x: LANES[lane], z: z + i * 1.8, got: false })
+}
+
+function addBell(lane, z) {
+  treats.push({ kind: 'bell', x: LANES[lane], z, got: false })
 }
 
 function freeLane(blocked) {
   return pick([0, 1, 2].filter((l) => !blocked.includes(l)))
 }
 
-// one "row" of trouble; always leaves at least one lane clear without jumping.
-// Returns the lanes it closes.
-function spawnRow(z) {
-  const r = Math.random()
+// Rows of trouble. Each always leaves at least one lane clear without jumping;
+// build() adds it at z and returns the lanes it closes.
 
-  if (r < 0.16) {
-    // a parked car with someone inside, about to swing a door into the bike lane
-    clearParked(z - 0.8, z + 2.6)
-    parked.push({ z, color: pick(CAR_COLORS), door: true, open: 0 })
-    const blocked = [0]
-    if (chance(0.45)) {
-      const lane = pick([1, 2])
-      addObstacle('car', lane, z - 0.5)
-      blocked.push(lane)
-    }
-    addTreats(freeLane(blocked), z - 4)
-    return blocked
+// a parked car with someone inside, about to swing a door into the bike lane
+function doorRow(z) {
+  clearParked(z - 0.8, z + 2.6)
+  parked.push({ z, color: pick(CAR_COLORS), door: true, open: 0 })
+  const blocked = [0]
+  if (chance(0.45)) {
+    const lane = pick([1, 2])
+    addObstacle('car', lane, z - 0.5)
+    blocked.push(lane)
   }
+  addTreats(freeLane(blocked), z - 4)
+  return blocked
+}
 
-  if (r < 0.44) {
-    // a cop car or delivery truck parked in the bike lane, or double-parked beside it
-    const kind = r < 0.3 ? 'police' : 'truck'
-    const lane = chance(0.75) ? 0 : 1
-    addObstacle(kind, lane, z)
-    const blocked = [lane]
-    if (lane === 0 && chance(0.4)) {
-      const l = pick([1, 2])
-      addObstacle('car', l, z + 0.5)
-      blocked.push(l)
-    } else if (lane === 1 && chance(0.4)) {
-      addObstacle('pothole', pick([0, 2]), z + 1)
-    }
-    addTreats(freeLane(blocked), z - 3)
-    return blocked
+// a cop car or delivery truck parked in the bike lane, or double-parked beside it
+function parkedRow(kind, z) {
+  const lane = chance(0.75) ? 0 : 1
+  addObstacle(kind, lane, z)
+  const blocked = [lane]
+  if (lane === 0 && chance(0.4)) {
+    const l = pick([1, 2])
+    addObstacle('car', l, z + 0.5)
+    blocked.push(l)
+  } else if (lane === 1 && chance(0.4)) {
+    addObstacle('pothole', pick([0, 2]), z + 1)
   }
+  addTreats(freeLane(blocked), z - 3)
+  return blocked
+}
 
-  if (r < 0.54) {
-    // a cab cuts across from traffic into the bike lane for a pickup
-    addObstacle('taxi', 1, z, { merge: 0 })
-    addTreats(2, z - 2)
-    return [0, 1]
-  }
+// a cab cuts across from traffic into the bike lane for a pickup
+function taxiRow(z) {
+  addObstacle('taxi', 1, z, { merge: 0 })
+  addTreats(2, z - 2)
+  return [0, 1]
+}
 
-  if (r < 0.66) {
-    // someone steps out from between parked cars into the bike lane, or keeps going
-    const target = chance(0.7) ? 0 : 1
-    clearParked(z - 1.4, z + 1.4)
-    const o = addObstacle('ped', target, z, { targetX: LANES[target] })
-    o.x = PARK_L
-    addTreats(2, z - 3)
-    return target === 0 ? [0] : [0, 1]
-  }
+// someone steps out from between parked cars into the bike lane, or keeps going
+function pedRow(z) {
+  const target = chance(0.7) ? 0 : 1
+  clearParked(z - 1.4, z + 1.4)
+  const o = addObstacle('ped', target, z, { targetX: LANES[target] })
+  o.x = PARK_L
+  addTreats(2, z - 3)
+  return target === 0 ? [0] : [0, 1]
+}
 
-  if (r < 0.76) {
-    // A wrong-way rider closes in on you, but never fast enough to catch the row
-    // in front of it. It still turns up right behind that row, so it can't be in
-    // the only lane that row leaves open.
-    const lanes = lastBlocked.length >= 2 ? [0, 1].filter((l) => lastBlocked.includes(l)) : [0, 0, 0, 0, 1]
-    const lane = pick(lanes)
-    const gap = Math.max(9, speed)
-    const extra = Math.min(6, (0.8 * gap * speed) / (SPAWN_Z - gap))
-    addObstacle('ebike', lane, z, { extra })
-    return [lane]
-  }
+// A delivery rider coming the wrong way down the bike lane, faster than the
+// street scrolls. It turns up just past the row in front of it, so it can't
+// come when the bike lane is that row's only way through.
+function ebikeRow(z) {
+  addObstacle('ebike', 0, z)
+  return [0]
+}
 
-  if (r < 0.86) {
-    const lanes = [0, 1, 2].sort(() => Math.random() - 0.5).slice(0, 2)
-    for (const l of lanes) addObstacle('pothole', l, z + rand(-0.5, 0.5))
-    addTreats(freeLane(lanes), z - 2)
-    return []
-  }
+function ebikeAllowed() {
+  return lastBlocked.includes(0) || lastBlocked.length < 2
+}
 
-  // gridlock: both traffic lanes stopped and the bike lane wide open
+// the gap that still leaves the rider 5m past the row in front when you get there
+function ebikeGap() {
+  return ((EBIKE_SPEED * SPAWN_Z) / speed + 5) / (1 + EBIKE_SPEED / speed)
+}
+
+function potholeRow(z) {
+  const lanes = [0, 1, 2].sort(() => Math.random() - 0.5).slice(0, 2)
+  for (const l of lanes) addObstacle('pothole', l, z + rand(-0.5, 0.5))
+  addTreats(freeLane(lanes), z - 2)
+  return []
+}
+
+// gridlock: both traffic lanes stopped and the bike lane wide open
+function gridlockRow(z) {
   addObstacle('car', 1, z)
   addObstacle('car', 2, z + rand(-0.6, 0.6))
   addTreats(0, z - 2)
   return [1, 2]
+}
+
+const ROWS = [
+  { weight: 16, build: doorRow },
+  { weight: 14, build: (z) => parkedRow('police', z) },
+  { weight: 14, build: (z) => parkedRow('truck', z) },
+  { weight: 10, build: taxiRow },
+  { weight: 12, build: pedRow },
+  { weight: 10, build: ebikeRow, allowed: ebikeAllowed, minGap: ebikeGap },
+  { weight: 10, build: potholeRow },
+  { weight: 14, build: gridlockRow },
+]
+
+function chooseRow() {
+  const options = ROWS.filter((r) => !r.allowed || r.allowed())
+  let x = Math.random() * options.reduce((sum, r) => sum + r.weight, 0)
+  for (const r of options) {
+    x -= r.weight
+    if (x < 0) return r
+  }
+  return options[options.length - 1]
+}
+
+function scheduleRow(gap) {
+  nextRow = chooseRow()
+  nextGap = Math.max(gap, nextRow.minGap ? nextRow.minGap() : 0)
 }
 
 // ---------- game flow ----------
@@ -505,18 +578,49 @@ function reset() {
   dist = 0
   bagels = 0
   rowAccum = 0
-  nextGap = speed * 2.5 // a couple of calm seconds to start
   lastBlocked = []
+  scheduleRow(speed * 2.5) // a couple of calm seconds to start
   dodgeCounts = {}
+  rows = 0
+  rings = 0
+  ringCooldown = 0
+  ringFx = 0
+  toastTimer = 0
+  ui.toast.hidden = true
+}
+
+// Browsers only allow full screen from a click or key press, so the first
+// start asks for it; the corner button toggles it after that.
+const canFullscreen = Boolean(document.fullscreenEnabled || document.webkitFullscreenEnabled)
+const isFullscreen = () => Boolean(document.fullscreenElement || document.webkitFullscreenElement)
+let askedFullscreen = false
+
+function setFullscreen(on) {
+  try {
+    const el = document.documentElement
+    const call = on ? el.requestFullscreen || el.webkitRequestFullscreen : document.exitFullscreen || document.webkitExitFullscreen
+    call?.call(on ? el : document)?.catch?.(() => {})
+  } catch {}
+}
+
+function syncFullscreenButton() {
+  const on = isFullscreen()
+  ui.fullscreen.classList.toggle('is-full', on)
+  ui.fullscreen.setAttribute('aria-label', on ? 'Exit full screen' : 'Full screen')
 }
 
 function startGame() {
+  if (canFullscreen && !askedFullscreen && !isFullscreen()) {
+    askedFullscreen = true
+    setFullscreen(true)
+  }
   reset()
   mode = 'playing'
   ui.ready.hidden = true
   ui.crashed.hidden = true
   ui.hud.hidden = false
   updateHud()
+  updateBellUi()
   wrap.focus({ preventScroll: true })
 }
 
@@ -524,6 +628,8 @@ function crash(kind) {
   mode = 'crashing'
   crashTimer = 0.8
   crashKind = kind
+  updateBellUi()
+  ui.toast.hidden = true
   if (dist > bestDist) {
     bestDist = dist
     try {
@@ -545,6 +651,7 @@ function showCrashCard() {
   const lesson = LESSONS[crashKind]
   ui.lessonTitle.textContent = lesson.title
   ui.lessonText.textContent = lesson.text
+  ui.facts.replaceChildren(...lesson.facts.map(factItem))
   ui.runBlocks.textContent = (dist / BLOCK_LEN).toFixed(1)
   ui.runBagels.textContent = String(bagels)
   ui.runBest.textContent = (bestDist / BLOCK_LEN).toFixed(1)
@@ -579,6 +686,76 @@ function jump() {
   player.vy = 7.2
 }
 
+// Ring the bell: pedestrians ahead look up from their phones and step back to
+// the curb. Ring early; someone already right in front of you can't get clear.
+function ringBell() {
+  if (mode !== 'playing' || rings <= 0 || ringCooldown > 0) return
+  rings--
+  ringCooldown = 0.3
+  ringFx = RING_FX
+  playBell()
+  const reach = Math.max(30, speed * 2.5)
+  for (const o of obstacles) {
+    if (o.kind === 'ped' && !o.startled && o.z > -0.5 && o.z < reach) {
+      o.startled = true
+      o.startledAt = time
+    }
+  }
+  updateBellUi()
+}
+
+function pickUpBell() {
+  rings = Math.min(MAX_RINGS, rings + BELL_RINGS)
+  updateBellUi()
+  ui.bell.classList.remove('pop')
+  void ui.bell.offsetWidth // restarts the animation
+  ui.bell.classList.add('pop')
+  if (!bellExplained) {
+    bellExplained = true
+    showToast(coarsePointer ? 'Got a bell! Swipe down or tap it to warn pedestrians' : 'Got a bell! Press B to warn pedestrians')
+  }
+}
+
+function updateBellUi() {
+  ui.bell.hidden = !(mode === 'playing' && rings > 0)
+  setText(ui.bellCount, `×${rings}`)
+}
+
+function showToast(text) {
+  ui.toast.textContent = text
+  ui.toast.hidden = false
+  toastTimer = 3
+}
+
+let audio = null
+// a bike bell's ding-ding: two strikes, each a few inharmonic partials ringing down
+function playBell() {
+  try {
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)()
+    if (audio.state === 'suspended') audio.resume()
+    const out = audio.createGain()
+    out.gain.value = 0.16
+    out.connect(audio.destination)
+    for (const t of [audio.currentTime, audio.currentTime + 0.14]) {
+      for (const [ratio, level] of [
+        [1, 0.6],
+        [2.32, 0.22],
+        [4.25, 0.1],
+      ]) {
+        const osc = audio.createOscillator()
+        const env = audio.createGain()
+        osc.frequency.value = 1900 * ratio
+        env.gain.setValueAtTime(0.0001, t)
+        env.gain.exponentialRampToValueAtTime(level, t + 0.005)
+        env.gain.exponentialRampToValueAtTime(0.0001, t + 0.8 / ratio)
+        osc.connect(env).connect(out)
+        osc.start(t)
+        osc.stop(t + 0.85)
+      }
+    }
+  } catch {}
+}
+
 function onKey(e) {
   if (e.metaKey || e.ctrlKey || e.altKey) return
   const k = e.key
@@ -586,7 +763,9 @@ function onKey(e) {
     if (k === 'ArrowLeft' || k === 'a' || k === 'A') moveLane(-1)
     else if (k === 'ArrowRight' || k === 'd' || k === 'D') moveLane(1)
     else if (k === 'ArrowUp' || k === 'w' || k === 'W' || k === ' ') jump()
-    else return
+    else if (k === 'b' || k === 'B' || k === 'ArrowDown' || k === 's' || k === 'S') {
+      if (!e.repeat) ringBell()
+    } else return
     e.preventDefault()
   } else if ((mode === 'ready' || mode === 'over') && (k === ' ' || k === 'Enter')) {
     // links and buttons handle their own keys
@@ -609,6 +788,7 @@ function onPointerUp(e) {
   down = null
   if (Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy)) moveLane(dx > 0 ? 1 : -1)
   else if (dy < -30) jump()
+  else if (dy > 30) ringBell()
   else if (Math.abs(dx) < 15 && Math.abs(dy) < 15) {
     const rect = canvas.getBoundingClientRect()
     const fx = (e.clientX - rect.left) / rect.width
@@ -681,21 +861,33 @@ function update(dt) {
     rowAccum += dz
     if (rowAccum >= nextGap) {
       rowAccum = 0
-      nextGap = Math.max(9, speed * rand(1.0, 1.5))
-      lastBlocked = spawnRow(SPAWN_Z)
+      lastBlocked = nextRow.build(SPAWN_Z)
+      rows++
+      // A bell floats in the lane this row leaves open, just past it. The third
+      // row always brings one, so you find out about bells early.
+      if (rings < MAX_RINGS && (rows === 3 || chance(BELL_CHANCE))) addBell(freeLane(lastBlocked), SPAWN_Z + 5.5)
+      scheduleRow(Math.max(9, speed * rand(1.0, 1.5)))
     }
   }
 
   // obstacles that move or react as you get close
   for (const o of obstacles) {
-    if (o.kind === 'ebike') o.z -= o.extra * dt
+    if (o.kind === 'ebike') o.z -= EBIKE_SPEED * dt
     if (o.kind === 'taxi' && o.z < speed * 1.7) {
       o.merge = Math.min(1, o.merge + dt / 0.7)
       o.x = LANES[1] + (LANES[0] - LANES[1]) * (1 - (1 - o.merge) ** 2)
     }
-    if (o.kind === 'ped' && o.z < speed * 2.3 && o.x < o.targetX) {
-      o.x = Math.min(o.targetX, o.x + 2.1 * dt)
-      o.walk += dt * 8
+    if (o.kind === 'ped') {
+      if (o.startled) {
+        // heard the bell: back to the curb, quick
+        if (o.x > PARK_L) {
+          o.x = Math.max(PARK_L, o.x - 3.5 * dt)
+          o.walk += dt * 12
+        }
+      } else if (o.z < speed * 2.3 && o.x < o.targetX) {
+        o.x = Math.min(o.targetX, o.x + 2.1 * dt)
+        o.walk += dt * 8
+      }
     }
   }
   for (const c of parked) {
@@ -714,6 +906,13 @@ function update(dt) {
   }
   player.pedal += dz * 1.4
   camX += (player.x * 0.6 - camX) * Math.min(1, dt * 6)
+
+  ringCooldown = Math.max(0, ringCooldown - dt)
+  ringFx = Math.max(0, ringFx - dt)
+  if (toastTimer > 0) {
+    toastTimer -= dt
+    if (toastTimer <= 0) ui.toast.hidden = true
+  }
 
   if (mode !== 'playing') return
 
@@ -738,7 +937,8 @@ function update(dt) {
   for (const t of treats) {
     if (!t.got && Math.abs(t.z) < 0.6 && Math.abs(t.x - player.x) < 0.6) {
       t.got = true
-      bagels++
+      if (t.kind === 'bell') pickUpBell()
+      else bagels++
     }
   }
   updateHud()
@@ -797,92 +997,94 @@ function drawGround() {
 }
 
 // The bike lane marking: a rider on a bike with an arrow ahead of it, painted
-// flat on the road. In marking units u runs across the lane and v runs down the
-// street. Like real road markings it's stretched along the street, so it reads
+// flat on the road. Shapes are in marking units (u across the lane, v down the
+// street) and every vertex is projected, so the paint foreshortens like real
+// paint. Like real road markings it's stretched along the street so it reads
 // upright in perspective.
-const MARK_SX = 0.5
-const MARK_SZ = 1.7
-const MARK = {
-  wheels: [
-    [-0.55, 0.3],
-    [0.55, 0.3],
-  ],
-  wheelR: 0.3,
-  // the rider faces left: front wheel at -u
-  frame: [
-    [[0.55, 0.3], [0.02, 0.3], [0.22, 0.75], [0.55, 0.3]], // chain stay, seat tube, seat stay
-    [[0.22, 0.75], [-0.38, 0.75], [0.02, 0.3]], // top tube, down tube
-    [[-0.38, 0.75], [-0.55, 0.3]], // fork
-    [[-0.38, 0.75], [-0.43, 0.88], [-0.31, 0.9]], // stem and handlebar
-    [[0.12, 0.8], [0.32, 0.8]], // saddle
-  ],
-  body: [
-    [[0.2, 0.88], [-0.16, 1.3]], // back
-    [[-0.16, 1.3], [-0.33, 0.92]], // arm
-    [[0.2, 0.88], [-0.08, 0.6], [0.04, 0.3]], // leg
-  ],
-  head: [-0.28, 1.52, 0.15],
-  shaft: [
-    [0, 2.05],
-    [0, 2.55],
-  ],
-  arrowHead: [
-    [-0.34, 2.5],
-    [0.34, 2.5],
-    [0, 2.98],
-  ],
-}
+const MARK_SX = 0.55
+const MARK_SZ = 2.6
 
-function ring(u, v, r) {
+// All shapes wind clockwise so a single nonzero fill paints their union; a
+// wheel's inner edge winds the other way to cut out the hole.
+function circlePts(u, v, r, clockwise, n = 18) {
   const pts = []
-  for (let i = 0; i <= 20; i++) {
-    const a = (i / 20) * Math.PI * 2
+  for (let i = 0; i < n; i++) {
+    const a = ((clockwise ? -i : i) / n) * Math.PI * 2
     pts.push([u + r * Math.cos(a), v + r * Math.sin(a)])
   }
   return pts
 }
 
+function barPts([u0, v0], [u1, v1], w) {
+  const len = Math.hypot(u1 - u0, v1 - v0)
+  const nu = (-(v1 - v0) / len) * (w / 2)
+  const nv = ((u1 - u0) / len) * (w / 2)
+  return [
+    [u0 + nu, v0 + nv],
+    [u1 + nu, v1 + nv],
+    [u1 - nu, v1 - nv],
+    [u0 - nu, v0 - nv],
+  ]
+}
+
+// a polyline painted w wide, with round joints; each piece is its own shape
+function brush(points, w) {
+  const shapes = []
+  for (let i = 0; i < points.length - 1; i++) shapes.push([barPts(points[i], points[i + 1], w)])
+  for (const [u, v] of points) shapes.push([circlePts(u, v, w / 2, true, 10)])
+  return shapes
+}
+
+const wheel = (u, v) => [circlePts(u, v, 0.34, true), circlePts(u, v, 0.21, false)]
+
+// The rider faces left, like the standard bicyclist symbol. The bike and the
+// arrow each fade out as they slide under you; v0 is where each one starts.
+const MARKING = [
+  {
+    v0: 0,
+    shapes: [
+      wheel(-0.6, 0.33),
+      wheel(0.6, 0.33),
+      ...brush([[0.6, 0.33], [0, 0.33], [0.24, 0.8], [0.6, 0.33]], 0.12), // chain stay, seat tube, seat stay
+      ...brush([[0.24, 0.8], [-0.36, 0.82], [0, 0.33]], 0.12), // top tube, down tube
+      ...brush([[-0.36, 0.82], [-0.6, 0.33]], 0.12), // fork
+      ...brush([[-0.36, 0.82], [-0.41, 0.97], [-0.27, 1.01]], 0.11), // stem and handlebar
+      ...brush([[0.22, 0.96], [-0.13, 1.37]], 0.24), // torso
+      ...brush([[-0.13, 1.37], [-0.25, 1.17], [-0.28, 1.0]], 0.13), // arm
+      ...brush([[0.22, 0.96], [-0.08, 0.68], [0.05, 0.35]], 0.15), // leg
+      [circlePts(-0.29, 1.62, 0.17, true)], // head
+    ],
+  },
+  {
+    v0: 2.05,
+    shapes: [
+      ...brush([[0, 2.15], [0, 2.62]], 0.2), // arrow shaft
+      [[[-0.4, 2.58], [0, 3.1], [0.4, 2.58]]], // arrow head
+    ],
+  },
+]
+
 function drawMarking(cx, cz) {
   if (cz > Z_FAR) return
-  // pieces that reach behind the camera are below the screen anyway; skip them whole
-  const zc = -D0 + 0.3
-  const visible = (pts) => pts.every(([, v]) => cz + v * MARK_SZ > zc)
-  const at = ([u, v]) => proj(cx + u * MARK_SX, 0, cz + v * MARK_SZ)
-  const s = proj(cx, 0, Math.max(cz + MARK_SZ, zc)).s
-
-  const path = (pts) => {
+  ctx.fillStyle = '#efefe9'
+  for (const part of MARKING) {
+    const alpha = 0.9 * fogAlpha(cz) * clamp((cz + part.v0 * MARK_SZ - 0.3) / 2.5, 0, 1)
+    if (alpha <= 0) continue
     ctx.beginPath()
-    pts.forEach((p, i) => {
-      const q = at(p)
-      if (i) ctx.lineTo(q.x, q.y)
-      else ctx.moveTo(q.x, q.y)
-    })
+    for (const shape of part.shapes) {
+      for (const loop of shape) {
+        loop.forEach(([u, v], i) => {
+          const p = proj(cx + u * MARK_SX, 0, cz + v * MARK_SZ)
+          if (i) ctx.lineTo(p.x, p.y)
+          else ctx.moveTo(p.x, p.y)
+        })
+        ctx.closePath()
+      }
+    }
+    ctx.globalAlpha = alpha
+    ctx.fill('nonzero')
   }
-  const stroke = (pts, w) => {
-    if (!visible(pts)) return
-    ctx.lineWidth = Math.max(1, w * s)
-    path(pts)
-    ctx.stroke()
-  }
-  const fill = (pts) => {
-    if (!visible(pts)) return
-    path(pts)
-    ctx.fill()
-  }
-
-  ctx.save()
-  ctx.globalAlpha = 0.9 * fogAlpha(cz)
-  ctx.strokeStyle = '#f2f2ee'
-  ctx.fillStyle = '#f2f2ee'
-  ctx.lineCap = 'round'
-  ctx.lineJoin = 'round'
-  for (const [u, v] of MARK.wheels) stroke(ring(u, v, MARK.wheelR), 0.065)
-  for (const line of MARK.frame) stroke(line, 0.06)
-  for (const line of MARK.body) stroke(line, 0.12)
-  fill(ring(...MARK.head))
-  stroke(MARK.shaft, 0.13)
-  fill(MARK.arrowHead)
-  ctx.restore()
+  ctx.globalAlpha = 1
 }
 
 function drawBuilding(b) {
@@ -1106,10 +1308,21 @@ function drawPed(o) {
   ctx.beginPath()
   ctx.arc(p.x, p.y - 1.63 * s, 0.13 * s, Math.PI, 0)
   ctx.fill()
-  // head down, staring at a phone
-  ctx.fillStyle = '#dff3ff'
-  ctx.fillRect(p.x + 0.04 * s, p.y - 1.32 * s, 0.1 * s, 0.14 * s)
-  glow(p.x + 0.09 * s, p.y - 1.27 * s, 0.25 * s, 'rgba(200,235,255,0.5)')
+  if (o.startled) {
+    // heard the bell and looked up
+    if (time - o.startledAt < 1.2) {
+      ctx.fillStyle = '#ffd65a'
+      ctx.font = `800 ${Math.max(8, 0.42 * s)}px Overpass, system-ui, sans-serif`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'alphabetic'
+      ctx.fillText('!', p.x, p.y - 1.8 * s)
+    }
+  } else {
+    // head down, staring at a phone
+    ctx.fillStyle = '#dff3ff'
+    ctx.fillRect(p.x + 0.04 * s, p.y - 1.32 * s, 0.1 * s, 0.14 * s)
+    glow(p.x + 0.09 * s, p.y - 1.27 * s, 0.25 * s, 'rgba(200,235,255,0.5)')
+  }
 }
 
 // delivery rider coming straight at you
@@ -1147,6 +1360,10 @@ function drawEbike(o) {
 
 function drawTreat(t) {
   if (t.z <= Z_NEAR + 0.3 || t.got) return
+  if (t.kind === 'bell') {
+    drawBellPickup(t)
+    return
+  }
   const p = proj(t.x, 0.55 + Math.sin(time * 4 + t.z) * 0.06, t.z)
   const s = p.s
   ctx.strokeStyle = '#c98a45'
@@ -1159,6 +1376,32 @@ function drawTreat(t) {
   ctx.beginPath()
   ctx.ellipse(p.x, p.y - 0.02 * s, 0.2 * s, 0.14 * s, 0, Math.PI * 1.1, Math.PI * 1.9)
   ctx.stroke()
+}
+
+// a gold bell floating over the lane
+function drawBellPickup(t) {
+  const p = proj(t.x, 0.8 + Math.sin(time * 3 + t.z) * 0.08, t.z)
+  const s = p.s
+  ctx.globalAlpha = fogAlpha(t.z)
+  glow(p.x, p.y, 0.55 * s, 'rgba(255,214,90,0.5)')
+  ctx.fillStyle = '#f2c94c'
+  ctx.beginPath()
+  ctx.moveTo(p.x - 0.22 * s, p.y + 0.12 * s)
+  ctx.quadraticCurveTo(p.x - 0.2 * s, p.y - 0.24 * s, p.x, p.y - 0.26 * s)
+  ctx.quadraticCurveTo(p.x + 0.2 * s, p.y - 0.24 * s, p.x + 0.22 * s, p.y + 0.12 * s)
+  ctx.closePath()
+  ctx.fill()
+  ctx.fillRect(p.x - 0.26 * s, p.y + 0.1 * s, 0.52 * s, 0.06 * s) // lip
+  ctx.beginPath()
+  ctx.arc(p.x, p.y - 0.29 * s, 0.045 * s, 0, Math.PI * 2) // knob
+  ctx.fill()
+  ctx.fillStyle = '#b8892a'
+  ctx.beginPath()
+  ctx.arc(p.x, p.y + 0.2 * s, 0.05 * s, 0, Math.PI * 2) // clapper
+  ctx.fill()
+  ctx.fillStyle = 'rgba(255,255,255,0.55)'
+  ctx.fillRect(p.x - 0.12 * s, p.y - 0.15 * s, 0.04 * s, 0.18 * s) // shine
+  ctx.globalAlpha = 1
 }
 
 // you, from behind
@@ -1228,6 +1471,24 @@ function drawPlayer() {
   ctx.fill()
   ctx.fillStyle = '#1f2a37'
   ctx.fillRect(-0.15 * s, -1.66 * s, 0.3 * s, 0.03 * s)
+
+  // a little gold bell on the handlebar while you have rings, rippling when rung
+  if (rings > 0 || ringFx > 0) {
+    ctx.fillStyle = '#ffd65a'
+    ctx.beginPath()
+    ctx.arc(0.25 * s, -1.17 * s, 0.05 * s, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  if (ringFx > 0) {
+    const grow = 1 - ringFx / RING_FX
+    ctx.strokeStyle = `rgba(255,214,90,${ringFx / RING_FX})`
+    ctx.lineWidth = Math.max(1.5, 0.03 * s)
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath()
+      ctx.arc(0.25 * s, -1.17 * s, (0.14 + grow * 0.5 + i * 0.12) * s, -0.8, 0.8)
+      ctx.stroke()
+    }
+  }
   ctx.restore()
 }
 
@@ -1319,34 +1580,38 @@ function link(href, text, className) {
   return a
 }
 
-function fillReference() {
-  $('facts').replaceChildren(
-    ...STATS.map((f) => {
-      const li = document.createElement('li')
-      const value = document.createElement('span')
-      value.className = 'fact-value'
-      value.textContent = f.value
-      const label = document.createElement('span')
-      label.append(`${f.label} `, link(f.source, 'source'))
-      li.append(value, label)
-      return li
-    }),
-  )
-  $('rules').replaceChildren(
-    ...RULES.map((r) => {
-      const li = document.createElement('li')
-      const text = document.createElement('span')
-      text.textContent = r.text
-      li.append(link(r.source, r.cite, 'cite'), text)
-      return li
-    }),
-  )
+function factItem(f) {
+  const li = document.createElement('li')
+  const value = document.createElement('span')
+  value.className = 'fact-value'
+  value.textContent = f.value
+  const label = document.createElement('span')
+  label.append(`${f.label} `, link(f.source, 'source'))
+  li.append(value, label)
+  return li
 }
 
-fillReference()
 makeSkyline()
 resize()
 reset()
+
+if (bestDist > 0) {
+  ui.readyBest.textContent = `Best: ${(bestDist / BLOCK_LEN).toFixed(1)} blocks`
+  ui.readyBest.hidden = false
+}
+
+ui.fullscreen.hidden = !canFullscreen
+ui.fullscreen.addEventListener('click', () => {
+  setFullscreen(!isFullscreen())
+  // so space and arrows go back to the game, not this button
+  wrap.focus({ preventScroll: true })
+})
+document.addEventListener('fullscreenchange', syncFullscreenButton)
+ui.bell.addEventListener('click', () => {
+  ringBell()
+  wrap.focus({ preventScroll: true })
+})
+document.addEventListener('webkitfullscreenchange', syncFullscreenButton)
 
 new ResizeObserver(resize).observe(canvas)
 new IntersectionObserver(([entry]) => {
