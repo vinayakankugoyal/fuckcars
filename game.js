@@ -519,14 +519,13 @@ function taxiRow(z) {
   return [0, 1]
 }
 
-// someone steps out from between parked cars into the bike lane, or keeps going
+// someone steps out from between parked cars and stops in the bike lane
 function pedRow(z) {
-  const target = chance(0.7) ? 0 : 1
   clearParked(z - 1.4, z + 1.4)
-  const o = addObstacle('ped', target, z, { targetX: LANES[target] })
+  const o = addObstacle('ped', 0, z, { targetX: LANES[0] })
   o.x = PARK_L
-  addTreats(2, z - 3)
-  return target === 0 ? [0] : [0, 1]
+  addTreats(freeLane([0]), z - 3)
+  return [0]
 }
 
 // A delivery rider coming the wrong way down the bike lane, faster than the
